@@ -1,0 +1,178 @@
+# .aihelper - Monorepo Information for AI Tools and Developers
+
+# --- MONOREPO OVERVIEW ---
+monorepoOverview:
+  description: "Full-stack monorepo with Next.js frontend, Express.js API, shared packages, Auth0 authentication, Prisma ORM, and Zod validation."
+  packageManager: "pnpm (version defined in root package.json)"
+  buildTool: "Turborepo (config: turbo.json)"
+  keyScripts:
+    - "pnpm dev: Starts all apps and packages in development mode."
+    - "pnpm build: Builds all apps and packages for production."
+    - "pnpm lint: Lints the entire codebase."
+    - "pnpm format: Formats code using Prettier."
+    - "pnpm --filter @workspace/db db:migrate: Runs database migrations."
+    - "pnpm --filter @workspace/db db:seed: Seeds the database with sample data."
+  primaryTechnologies:
+    - "TypeScript"
+    - "Next.js (React)"
+    - "Express.js (Node.js)"
+    - "Prisma (PostgreSQL)"
+    - "Auth0 (Authentication)"
+    - "Zod (Schema Validation)"
+    - "Shadcn UI (Tailwind CSS)"
+    - "Turborepo"
+    - "pnpm"
+
+# --- PACKAGES ---
+packages:
+  - name: "@workspace/auth"
+    path: "packages/auth"
+    purpose: "Provides shared Auth0 configuration constants and potentially helper functions related to authentication. Helps maintain consistency for Auth0 environment variable names across apps."
+    keyTechnologies: ["TypeScript"]
+    keyFiles: ["src/index.ts"]
+    interaction: "Used by apps/web and apps/api to understand expected Auth0 environment variable names. Currently does not hold runtime logic itself but centralizes naming conventions."
+
+  - name: "@workspace/db"
+    path: "packages/db"
+    purpose: "Manages the database schema (PostgreSQL), Prisma client generation, migrations, and data seeding."
+    keyTechnologies: ["Prisma", "PostgreSQL", "TypeScript"]
+    keyFiles:
+      - "prisma/schema.prisma: Defines database models (User, Post)."
+      - "prisma/seed.ts: Script for populating the database with initial data."
+      - "index.ts: Exports the generated Prisma client."
+      - "generated/prisma: Contains the auto-generated Prisma client code."
+    interaction: "Used by apps/api to perform database operations. CLI tools (prisma migrate, db:seed) are run against this package."
+
+  - name: "@workspace/types"
+    path: "packages/types"
+    purpose: "Defines shared Zod schemas for data validation and infers TypeScript types. Ensures data consistency between frontend (apps/web) and backend (apps/api)."
+    keyTechnologies: ["Zod", "TypeScript"]
+    keyFiles: ["src/index.ts: Exports Zod schemas (e.g., UserSchema, PostSchema, CreatePostSchema) and their inferred types."]
+    interaction: "Imported by apps/web for frontend validation/typing and by apps/api for request validation and database interaction typing."
+
+  - name: "@workspace/ui"
+    path: "packages/ui"
+    purpose: "Contains shared React UI components based on Shadcn UI. Promotes UI consistency across applications."
+    keyTechnologies: ["React", "TypeScript", "Tailwind CSS", "Shadcn UI"]
+    keyFiles:
+      - "src/components/*: Individual UI components (e.g., Button, Input, Textarea)."
+      - "src/lib/utils.ts: Utility functions for UI components (e.g., cn)."
+      - "globals.css: Global styles for UI components."
+    interaction: "Imported by apps/web to build its user interface."
+
+  - name: "@workspace/eslint-config"
+    path: "packages/eslint-config"
+    purpose: "Shared ESLint configurations for consistent linting rules across the monorepo."
+    keyTechnologies: ["ESLint"]
+    keyFiles: ["base.js", "next.js", "react-internal.js"]
+    interaction: "Used as a devDependency by other packages and applications in their respective eslintrc files."
+
+  - name: "@workspace/typescript-config"
+    path: "packages/typescript-config"
+    purpose: "Shared TypeScript tsconfig.json bases for consistent compiler options."
+    keyTechnologies: ["TypeScript"]
+    keyFiles: ["base.json", "nextjs.json", "react-library.json"]
+    interaction: "Extended by tsconfig.json files in other packages and applications."
+
+# --- APPLICATIONS ---
+applications:
+  - name: "web"
+    path: "apps/web"
+    purpose: "Frontend application providing the user interface. Handles user authentication and interacts with apps/api to display and manage data (posts)."
+    keyTechnologies: ["Next.js", "React", "TypeScript", "@auth0/nextjs-auth0", "@workspace/ui", "@workspace/types", "Tailwind CSS"]
+    keyFiles:
+      - "app/page.tsx: Main page, handles login/logout, post creation, and post display."
+      - "app/layout.tsx: Root layout, includes Auth0 UserProvider and theme Providers."
+      - "app/api/auth/[auth0]/route.ts: Auth0 dynamic API routes for handling authentication callbacks."
+      - "next.config.mjs: Next.js configuration."
+      - ".env.local (user-created): For environment variables."
+    environmentVariables:
+      - "AUTH0_SECRET"
+      - "AUTH0_ISSUER_BASE_URL"
+      - "AUTH0_CLIENT_ID"
+      - "AUTH0_CLIENT_SECRET"
+      - "AUTH0_BASE_URL"
+      - "NEXT_PUBLIC_API_URL"
+    runtimeInfo: "Run with 'pnpm --filter web dev'. Typically accessible at http://localhost:3000."
+    interaction: "Renders UI using @workspace/ui. Uses @workspace/types for data structures. Authenticates users via Auth0. Fetches and sends data to apps/api."
+
+  - name: "api"
+    path: "apps/api"
+    purpose: "Backend RESTful API service. Handles business logic, data persistence, and protects endpoints using Auth0."
+    keyTechnologies: ["Express.js", "Node.js", "TypeScript", "Prisma (@workspace/db)", "Zod (@workspace/types)", "express-oauth2-jwt-bearer"]
+    keyFiles:
+      - "src/index.ts: Main API server setup, route definitions, and Auth0 middleware."
+      - ".env (user-created): For environment variables."
+    environmentVariables:
+      - "PORT"
+      - "DATABASE_URL"
+      - "AUTH0_API_ISSUER_BASE_URL"
+      - "AUTH0_API_AUDIENCE"
+    runtimeInfo: "Run with 'pnpm --filter api dev'. Typically listens on http://localhost:3001."
+    interaction: "Uses @workspace/db (Prisma client) to interact with the database. Uses @workspace/types for request validation. Endpoints are consumed by apps/web."
+
+# --- DEVELOPMENT WORKFLOW ---
+developmentWorkflow:
+  setup:
+    - "1. Clone repository."
+    - "2. Run 'pnpm install' in the root."
+    - "3. Configure environment variables (see README.md and .env.example files)."
+    - "4. Set up Auth0 Application and API (see README.md)."
+    - "5. Run 'pnpm --filter @workspace/db db:migrate' for database schema."
+    - "6. (Optional) Run 'pnpm --filter @workspace/db db:seed' for initial data."
+  runningTheApp: "Run 'pnpm dev' from the root to start all services (apps/web, apps/api, and package watchers)."
+  addingNewPackage:
+    - "1. Create the new package directory under 'packages/'."
+    - "2. Initialize 'package.json' (consider 'private: true')."
+    - "3. Add dependencies (including workspace dependencies like '@workspace/typescript-config')."
+    - "4. Ensure 'pnpm-workspace.yaml' includes the new package path (if not covered by 'packages/*')."
+    - "5. Add 'build', 'dev', 'lint' scripts to its 'package.json'."
+    - "6. Configure its 'tsconfig.json' (extending from '@workspace/typescript-config')."
+    - "7. Add the new package as a dependency to apps or other packages that will use it."
+    - "8. Run 'pnpm install' from the root."
+  keyInteractions:
+    - "Web (apps/web) calls API (apps/api) using RESTful principles. API calls are authenticated using Bearer tokens (Auth0 access tokens)."
+    - "Shared types from 'packages/types' (Zod schemas) ensure data consistency between web and API."
+    - "Database operations in 'apps/api' are performed using the Prisma client provided by 'packages/db'."
+    - "UI components from 'packages/ui' are used in 'apps/web'."
+
+# --- ENVIRONMENT SETUP SUMMARY ---
+envSetupSummary:
+  detailedInfo: "Refer to the root README.md for a comprehensive guide on environment variables and Auth0 setup."
+  filesRequiringConfiguration:
+    - "apps/web/.env.local (for frontend Auth0 and API URL)"
+    - "apps/api/.env (for backend server, database, and API Auth0)"
+    - "packages/db/.env or root .env (for Prisma CLI database access if not using apps/api's .env context for these tools)"
+
+# --- HOW TO IMPLEMENT A NEW PACKAGE IN AN APP ---
+# 1. Define the package (e.g., packages/new-feature).
+# 2. Add necessary dependencies and scripts to the package's package.json.
+# 3. Export functionalities from the new package (e.g., from its src/index.ts).
+# 4. In the app (e.g., apps/web or apps/api) that needs to use the new package:
+#    a. Add the new package as a workspace dependency in the app's package.json:
+#       "dependencies": {
+#         "@workspace/new-feature": "workspace:*"
+#       }
+#    b. Run 'pnpm install' from the root of the monorepo.
+#    c. Import and use the exported functionalities in the app's code:
+#       import { someFunction } from '@workspace/new-feature';
+# 5. Ensure Turborepo's pipeline correctly builds the new package before the app if there's a dependency.
+#    The default "^build" in task dependencies usually handles this.
+
+# --- WHAT EACH APP DOES ---
+# apps/web:
+#   - Handles user sign-up, login, and logout using Auth0.
+#   - Allows authenticated users to view a list of their posts.
+#   - Allows authenticated users to create new posts (title, content).
+#   - Allows authenticated users to delete their own posts.
+#   - Fetches post data from and sends commands to apps/api.
+#   - Uses UI components from packages/ui for a consistent look and feel.
+#
+# apps/api:
+#   - Provides secure (Auth0 protected) RESTful API endpoints for managing posts.
+#   - GET /posts: Returns posts for the authenticated user.
+#   - POST /posts: Creates a new post for the authenticated user, with Zod validation for input.
+#   - DELETE /posts/:id: Deletes a specific post if the authenticated user is the author.
+#   - Interacts with the PostgreSQL database via Prisma (from packages/db) for all data operations.
+#   - Uses Zod schemas from packages/types for validating request payloads.
+EOF
