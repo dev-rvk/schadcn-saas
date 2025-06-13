@@ -64,13 +64,8 @@ app.post('/posts', checkJwt, async (req, res) => {
 
     const { title, content } = validationResult.data;
 
-    // Ensure the user exists in your DB, or create them (optional, depends on flow)
-    // For this example, we assume the user from Auth0 token should exist or their posts won't be associated.
-    // A more robust system might sync users on first login via the web app.
     const user = await prisma.user.findUnique({ where: { auth0Id }});
     if (!user) {
-        // This case should ideally be handled by user creation on web app's first login.
-        // If a user made it here with a valid token but isn't in DB, it's a sync issue.
         return res.status(403).json({ message: "User profile not found in local database. Please complete profile setup." });
     }
 
@@ -78,14 +73,13 @@ app.post('/posts', checkJwt, async (req, res) => {
       data: {
         title,
         content,
-        authorId: auth0Id, // Link to the User's auth0Id
-        published: true, // Default to published, or make it part of schema
+        authorId: auth0Id,
+        published: true,
       },
     });
     res.status(201).json(post);
   } catch (error) {
     console.error('Error creating post:', error);
-    // Check for specific Prisma errors if needed
     res.status(500).json({ message: 'Failed to create post' });
   }
 });
@@ -124,15 +118,16 @@ app.delete('/posts/:id', checkJwt, async (req, res) => {
 
 // Start server
 app.listen(port, () => {
-  console.log(\`API server listening on http://localhost:\${port}\`);
+  // Corrected line below:
+  console.log(`API server listening on http://localhost:${port}`);
 });
 
 // Handle Prisma shutdown
 process.on('SIGINT', async () => {
-  await prisma.\$disconnect();
+  await prisma.$disconnect();
   process.exit(0);
 });
 process.on('SIGTERM', async () => {
-  await prisma.\$disconnect();
+  await prisma.$disconnect();
   process.exit(0);
 });

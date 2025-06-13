@@ -3,7 +3,7 @@ import { PrismaClient } from '../generated/prisma';
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log(\`Start seeding ...\`);
+  console.log(`Start seeding ...`); // Corrected
 
   // Create User 1
   const user1Auth0Id = 'auth0|seeduser1'; // Placeholder Auth0 ID
@@ -16,7 +16,7 @@ async function main() {
       name: 'Seed User 1',
     },
   });
-  console.log(\`Created/Found user: \${user1.name} with auth0Id: \${user1.auth0Id}\`);
+  console.log(`Created/Found user: ${user1.name} with auth0Id: ${user1.auth0Id}`); // Corrected
 
   // Create User 2
   const user2Auth0Id = 'auth0|seeduser2'; // Placeholder Auth0 ID
@@ -29,7 +29,7 @@ async function main() {
       name: 'Seed User 2',
     },
   });
-  console.log(\`Created/Found user: \${user2.name} with auth0Id: \${user2.auth0Id}\`);
+  console.log(`Created/Found user: ${user2.name} with auth0Id: ${user2.auth0Id}`); // Corrected
 
   // Create posts for User 1
   await prisma.post.createMany({
@@ -47,9 +47,9 @@ async function main() {
         published: false,
       },
     ],
-    skipDuplicates: true, // Avoid errors if posts with same title/content exist (though unlikely with cuid)
+    skipDuplicates: true,
   });
-  console.log(\`Created posts for \${user1.name}\`);
+  console.log(`Created posts for ${user1.name}`); // Corrected
 
   // Create posts for User 2
   await prisma.post.createMany({
@@ -63,9 +63,9 @@ async function main() {
     ],
     skipDuplicates: true,
   });
-  console.log(\`Created posts for \${user2.name}\`);
+  console.log(`Created posts for ${user2.name}`); // Corrected
 
-  console.log(\`Seeding finished.\`);
+  console.log(`Seeding finished.`); // Corrected
 }
 
 main()
@@ -74,5 +74,5 @@ main()
     process.exit(1);
   })
   .finally(async () => {
-    await prisma.\$disconnect();
+    await prisma.$disconnect();
   });
