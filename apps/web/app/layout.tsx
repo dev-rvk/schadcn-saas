@@ -1,30 +1,30 @@
-import { Geist, Geist_Mono } from "next/font/google"
+import { GeistSans } from "geist/font/sans";
+import { GeistMono } from "geist/font/mono";
 
-import "@workspace/ui/globals.css"
-import { Providers } from "@/components/providers"
+import "@workspace/ui/globals.css";
+import { Providers } from "@/components/providers";
+// Removed: import { UserProvider } from '@auth0/nextjs-auth0/client';
 
-const fontSans = Geist({
-  subsets: ["latin"],
-  variable: "--font-sans",
-})
-
-const fontMono = Geist_Mono({
-  subsets: ["latin"],
-  variable: "--font-mono",
-})
+export const metadata = {
+  title: 'Auth0 Protected App - Server Client', // Updated title slightly for clarity
+  description: 'Next.js app with Auth0 authentication using server-side client and middleware',
+};
 
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode
+  children: React.ReactNode;
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${fontSans.variable} ${fontMono.variable} font-sans antialiased `}
+        className={`${GeistSans.variable} ${GeistMono.variable} font-sans antialiased`}
       >
-        <Providers>{children}</Providers>
+        {/* UserProvider removed from here */}
+        <Providers attribute="class" defaultTheme="system" enableSystem>
+          {children}
+        </Providers>
       </body>
     </html>
-  )
+  );
 }

@@ -1,0 +1,124 @@
+# .aihelper - Monorepo Information for AI Tools and Developers
+
+# --- MONOREPO OVERVIEW ---
+monorepoOverview:
+  description: "Full-stack monorepo with Next.js frontend (App Router, Server Actions), Express.js API, shared packages, Auth0 server-side authentication, Prisma ORM, and Zod validation."
+  packageManager: "pnpm"
+  buildTool: "Turborepo"
+  keyScripts:
+    - "pnpm dev"
+    - "pnpm build"
+    - "pnpm lint"
+    - "pnpm --filter @workspace/db db:migrate"
+    - "pnpm --filter @workspace/db db:seed"
+  primaryTechnologies: ["TypeScript", "Next.js (App Router)", "Express.js", "Prisma", "Auth0", "Zod", "Shadcn UI", "Server Actions"]
+
+# --- PACKAGES ---
+# (auth, db, types, ui, eslint-config, typescript-config sections remain largely the same as previous .aihelper)
+packages:
+  - name: "@workspace/auth"
+    path: "packages/auth"
+    purpose: "Provides shared Auth0 configuration constants and potentially helper functions related to authentication. Helps maintain consistency for Auth0 environment variable names across apps."
+    keyTechnologies: ["TypeScript"]
+    keyFiles: ["src/index.ts"]
+    interaction: "Used by apps/web and apps/api to understand expected Auth0 environment variable names."
+
+  - name: "@workspace/db"
+    path: "packages/db"
+    purpose: "Manages the database schema (PostgreSQL), Prisma client generation, migrations, and data seeding."
+    keyTechnologies: ["Prisma", "PostgreSQL", "TypeScript"]
+    keyFiles: ["prisma/schema.prisma", "prisma/seed.ts", "index.ts", "generated/prisma"]
+    interaction: "Used by apps/api for database operations. CLI tools run against this package."
+
+  - name: "@workspace/types"
+    path: "packages/types"
+    purpose: "Defines shared Zod schemas for data validation and infers TypeScript types."
+    keyTechnologies: ["Zod", "TypeScript"]
+    keyFiles: ["src/index.ts"]
+    interaction: "Imported by apps/web (for Server Action payloads) and apps/api."
+
+  - name: "@workspace/ui"
+    path: "packages/ui"
+    purpose: "Contains shared React UI components based on Shadcn UI."
+    keyTechnologies: ["React", "TypeScript", "Tailwind CSS", "Shadcn UI"]
+    keyFiles: ["src/components/*", "src/lib/utils.ts", "globals.css"]
+    interaction: "Imported by apps/web."
+
+  - name: "@workspace/eslint-config"
+    path: "packages/eslint-config"
+    purpose: "Shared ESLint configurations."
+    keyTechnologies: ["ESLint"]
+    keyFiles: ["base.js", "next.js", "react-internal.js"]
+    interaction: "Used by other packages/apps."
+
+  - name: "@workspace/typescript-config"
+    path: "packages/typescript-config"
+    purpose: "Shared TypeScript tsconfig.json bases."
+    keyTechnologies: ["TypeScript"]
+    keyFiles: ["base.json", "nextjs.json", "react-library.json"]
+    interaction: "Extended by other packages/apps."
+
+# --- APPLICATIONS ---
+applications:
+  - name: "web"
+    path: "apps/web"
+    purpose: "Frontend application using Next.js App Router. Handles user authentication via Auth0 server-side SDK and middleware. Interacts with apps/api using Server Actions."
+    keyTechnologies: ["Next.js (App Router)", "React", "TypeScript", "@auth0/nextjs-auth0/server", "@workspace/ui", "@workspace/types", "Server Actions"]
+    keyFiles:
+      - "app/page.tsx: Main page (Server Component), delegates to PostManager."
+      - "app/layout.tsx: Root layout (Server Component)."
+      - "lib/auth0.ts: Auth0Client instantiation and configuration."
+      - "middleware.ts: Auth0 middleware for request authentication."
+      - "app/actions.ts: Server Actions for API communication (CRUD for posts)."
+      - "components/PostManager.tsx: Client component for post UI and interaction."
+      - ".env.local (user-created): For environment variables."
+    environmentVariables:
+      - "AUTH0_SECRET"
+      - "AUTH0_DOMAIN"
+      - "AUTH0_CLIENT_ID"
+      - "AUTH0_CLIENT_SECRET"
+      - "APP_BASE_URL"
+      - "AUTH0_API_AUDIENCE"
+      - "AUTH0_LOGIN_SCOPES"
+      - "NEXT_PUBLIC_API_URL"
+    runtimeInfo: "Run with 'pnpm --filter web dev'. Typically at http://localhost:3000."
+    interaction: "Renders UI using @workspace/ui. Uses Server Actions in 'app/actions.ts' (which use @workspace/types) to call 'apps/api'. Authenticates users via Auth0 middleware using '@auth0/nextjs-auth0/server'."
+
+  - name: "api"
+    path: "apps/api"
+    purpose: "Backend RESTful API service. Handles business logic, data persistence, and protects endpoints using Auth0 JWTs."
+    keyTechnologies: ["Express.js", "Node.js", "TypeScript", "Prisma (@workspace/db)", "Zod (@workspace/types)", "express-oauth2-jwt-bearer"]
+    keyFiles: ["src/index.ts", ".env (user-created)"]
+    environmentVariables: ["PORT", "DATABASE_URL", "AUTH0_API_ISSUER_BASE_URL", "AUTH0_API_AUDIENCE"]
+    runtimeInfo: "Run with 'pnpm --filter api dev'. Typically at http://localhost:3001."
+    interaction: "Uses @workspace/db for database. Uses @workspace/types for validation. Consumed by apps/web (via Server Actions)."
+
+# --- DEVELOPMENT WORKFLOW ---
+# (Remains largely the same)
+developmentWorkflow:
+  setup: ["Clone, pnpm install, .env setup, Auth0 setup, db migrate/seed"]
+  runningTheApp: "pnpm dev"
+  addingNewPackage: ["Create dir, init package.json, add to workspace, configure build, use in apps"]
+  keyInteractions:
+    - "apps/web (Server Actions) call apps/api (REST, Auth0 bearer token)."
+    - "Shared types from packages/types."
+    - "Database interactions via Prisma from packages/db."
+
+# --- ENVIRONMENT SETUP SUMMARY ---
+envSetupSummary:
+  detailedInfo: "Refer to root README.md."
+  filesRequiringConfiguration: ["apps/web/.env.local", "apps/api/.env", "packages/db/.env or root .env"]
+
+# --- HOW TO IMPLEMENT A NEW PACKAGE IN AN APP ---
+# (Remains the same)
+
+# --- WHAT EACH APP DOES ---
+# apps/web:
+#   - Handles user sign-up, login, logout using Auth0 (server-side SDK & middleware).
+#   - Allows authenticated users to manage posts (view, create, delete) via Server Actions that call apps/api.
+#   - Uses UI components from packages/ui.
+#
+# apps/api:
+#   - Provides secure (Auth0 protected) RESTful API for posts.
+#   - Interacts with DB via Prisma, uses Zod for validation.
+# (Content similar to previous, just reinforcing the new web app architecture)
